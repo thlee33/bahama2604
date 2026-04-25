@@ -5,13 +5,13 @@
 ## 🌎 주요 기능 (Features)
 
 ### 1. 3D 지형 위 해수면 상승 및 침수 가시화 
-![해수면 상승 시뮬레이션](./doc/NbS%20Flood%20Reduction.png)
+![해수면 상승 시뮬레이션](./doc/Sea%20Level%20Rise.png)
 - **Google Photorealistic 3D Tiles** 위경도 데이터를 활용한 정교한 모델링.
 - 슬라이더 조절을 통한 **해수면 시나리오 변경** 및 지형의 상하 **수직 과장(Vertical Exaggeration)** 연동 기능.
 - 해안가 인프라가 한눈에 들어오는 **최적의 카메라 뷰(정북 방향)** 및 시작 시 바하마 전역 오버뷰 제공.
 
 ### 2. GPU 물리 기반 `천해파(Shallow Water Wave)` 시뮬레이션 
-![자연기반해법 시뮬레이션](./doc/Sea%20Level%20Rise.png)
+![자연기반해법 시뮬레이션](./doc/NbS%20Flood%20Reduction.png)
 - ** 해류/파랑을 WebGL로 동적시각화 **:
   - `v = sqrt(g * h)` 공식 기반 파도 흐름 시각화.
   - 맹그로브 식재 영역에서 마찰계수로 인해 **파동 에너지 소멸(Shadow/Wake Effect)** 시각화.
