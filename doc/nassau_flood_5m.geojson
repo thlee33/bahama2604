@@ -1,0 +1,40 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -77.6,
+              24.9
+            ],
+            [
+              -77.2,
+              24.9
+            ],
+            [
+              -77.2,
+              25.1
+            ],
+            [
+              -77.6,
+              25.1
+            ],
+            [
+              -77.6,
+              24.9
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "scenario": "Sea Level Rise",
+        "riseMeters": 5,
+        "verticalExaggeration": 1
+      }
+    }
+  ]
+}
