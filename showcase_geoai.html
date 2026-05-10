@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoAI Dynamic Routing Showcase</title>
+    
+    <!-- MapLibre GL JS -->
+    <script src="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.css" rel="stylesheet" />
+    
+    <!-- Turf.js -->
+    <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+    
+    <!-- Google Fonts (Pretendard 대용) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #0B0F19; overflow: hidden; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        
+        .glass-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            color: white;
+            z-index: 10;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        h1 { margin: 0 0 8px 0; font-size: 20px; color: #38bdf8; letter-spacing: -0.5px; }
+        p.subtitle { margin: 0 0 24px 0; font-size: 13px; color: #94a3b8; line-height: 1.5; }
+        
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-left: 3px solid #10b981;
+            transition: border-color 0.3s;
+        }
+        .stat-box.danger { border-left-color: #ef4444; }
+        
+        .stat-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 18px; font-weight: 600; margin-top: 4px; display: flex; align-items: center; justify-content: space-between;}
+        .stat-status { font-size: 12px; font-weight: 400; color: #10b981; }
+        .stat-status.danger { color: #ef4444; }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+        .btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+        .btn.danger { background: #ef4444; }
+        .btn.danger:hover { background: #dc2626; }
+        .btn:disabled { background: #475569; cursor: not-allowed; transform: none; }
+        
+        .legend { margin-top: 20px; font-size: 12px; color: #cbd5e1; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .line { width: 16px; height: 4px; border-radius: 2px; margin-right: 8px; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="glass-panel">
+    <a href="index.html" class="btn" style="text-decoration:none; text-align:center; display:block; margin-bottom:16px; background:#475569;">⬅️ Back to Main Dashboard</a>
+    <h1>GeoAI Dynamic Routing</h1>
+    <p class="subtitle">Turf.js + LLM 기반 실시간 침수 감지 및 대피소 우회 경로(A*) 자동 생성 시스템</p>
+    
+    <div class="stat-box" id="system-status-box">
+        <div class="stat-label">AI Routing Status</div>
+        <div class="stat-value">
+            <span id="route-dist">Calculating...</span>
+            <span class="stat-status" id="route-state">SAFE</span>
+        </div>
+    </div>
+    
+    <button id="btn-start" class="btn danger">🌊 해일 시뮬레이션 시작</button>
+    <button id="btn-reset" class="btn" disabled>🔄 초기화</button>
+    
+    <div class="legend">
+        <div class="legend-item"><div class="dot" style="background:#3b82f6;"></div>시민 위치 (Start)</div>
+        <div class="legend-item"><div class="dot" style="background:#10b981;"></div>안전 대피소 (Shelter)</div>
+        <div class="legend-item"><div class="line" style="background:#3b82f6;"></div>추천 대피 경로</div>
+        <div class="legend-item"><div class="line" style="background:#ef4444; border-style:dashed;"></div>차단된 도로 (Flooded)</div>
+    </div>
+</div>
+
+<!-- 데이터 스크립트 로드 -->
+<script src="./data/mock_network.js"></script>
+
+<script>
+    // MapLibre 인스턴스 생성 (다크 테마 타일)
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+        center: [-77.338, 25.070],
+        zoom: 14.5,
+        pitch: 45,
+        bearing: -10
+    });
+
+    // 시작 노드(A)와 대피소 노드(J)
+    const START_NODE = 'A';
+    const GOAL_NODE = 'J';
+    const FLOOD_CENTER = [-77.350, 25.079]; // 침수 진앙지 (북서쪽 바다)
+    
+    let isSimulating = false;
+    let floodRadius = 0; // km
+    let maxFloodRadius = 1.2;
+    let blockedEdges = []; // 차단된 도로 ID 목록
+    let animationId = null;
+
+    map.on('load', () => {
+        // 1. 전체 도로망 소스 추가
+        map.addSource('roads', {
+            type: 'geojson',
+            data: getRoadGeoJSON(networkGraph, [])
+        });
+        
+        // 정상 도로 레이어
+        map.addLayer({
+            id: 'roads-normal',
+            type: 'line',
+            source: 'roads',
+            filter: ['==', 'isBlocked', 0],
+            paint: { 'line-color': '#475569', 'line-width': 2, 'line-opacity': 0.5 }
+        });
+        
+        // 차단된 도로 레이어
+        map.addLayer({
+            id: 'roads-blocked',
+            type: 'line',
+            source: 'roads',
+            filter: ['==', 'isBlocked', 1],
+            paint: { 'line-color': '#ef4444', 'line-width': 3, 'line-dasharray': [2, 2] }
+        });
+
+        // 2. 현재 경로 소스 추가
+        map.addSource('active-route', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+        });
+        
+        // 경로 레이어 (Glow 효과용 아래, 메인 선 위)
+        map.addLayer({
+            id: 'active-route-glow',
+            type: 'line',
+            source: 'active-route',
+            paint: { 'line-color': '#3b82f6', 'line-width': 8, 'line-opacity': 0.3, 'line-blur': 4 }
+        });
+        map.addLayer({
+            id: 'active-route-line',
+            type: 'line',
+            source: 'active-route',
+            paint: { 'line-color': '#38bdf8', 'line-width': 4 }
+        });
+
+        // 3. 침수 폴리곤 소스 추가
+        map.addSource('flood-zone', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+        });
+        
+        map.addLayer({
+            id: 'flood-layer',
+            type: 'fill',
+            source: 'flood-zone',
+            paint: { 'fill-color': '#ef4444', 'fill-opacity': 0.3 }
+        });
+
+        // 4. 포인트 마커 (시작점, 대피소)
+        const pointGeojson = {
+            type: 'FeatureCollection',
+            features: [
+                { type: 'Feature', geometry: { type: 'Point', coordinates: nodes[START_NODE] }, properties: { type: 'start' } },
+                { type: 'Feature', geometry: { type: 'Point', coordinates: nodes[GOAL_NODE] }, properties: { type: 'goal' } }
+            ]
+        };
+        map.addSource('points', { type: 'geojson', data: pointGeojson });
+        map.addLayer({
+            id: 'points-layer',
+            type: 'circle',
+            source: 'points',
+            paint: {
+                'circle-radius': 8,
+                'circle-color': ['match', ['get', 'type'], 'start', '#3b82f6', 'goal', '#10b981', '#ffffff'],
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+
+        // 초기 경로 렌더링
+        updateRoute();
+    });
+
+    // 경로 업데이트 로직
+    function updateRoute() {
+        const pathCoords = findShortestPath(networkGraph, START_NODE, GOAL_NODE, blockedEdges);
+        
+        if (pathCoords.length > 0) {
+            // 경로 거리 계산 (Turf.js)
+            const line = turf.lineString(pathCoords);
+            const distKm = turf.length(line, {units: 'kilometers'});
+            document.getElementById('route-dist').innerText = (distKm * 1000).toFixed(0) + ' m';
+            
+            map.getSource('active-route').setData(line);
+        } else {
+            document.getElementById('route-dist').innerText = '고립됨';
+            map.getSource('active-route').setData({ type: 'FeatureCollection', features: [] });
+        }
+        
+        // 전체 도로 색상 업데이트
+        map.getSource('roads').setData(getRoadGeoJSON(networkGraph, blockedEdges));
+    }
+
+    // 시뮬레이션 루프
+    function animateFlood() {
+        if (!isSimulating) return;
+
+        floodRadius += 0.003; // km 단위 증가 (속도 조절)
+        
+        if (floodRadius > maxFloodRadius) {
+            isSimulating = false;
+            document.getElementById('btn-start').innerText = "시뮬레이션 완료";
+            return;
+        }
+
+        // Turf.js로 원 생성
+        const floodPoly = turf.circle(FLOOD_CENTER, floodRadius, {units: 'kilometers', steps: 64});
+        map.getSource('flood-zone').setData(floodPoly);
+
+        // 도로 교차 검사 (Turf.booleanIntersects)
+        let newlyBlocked = false;
+        
+        const roadFeatureCollection = getRoadGeoJSON(networkGraph, []);
+        roadFeatureCollection.features.forEach(feat => {
+            const edgeId = feat.properties.id;
+            if (!blockedEdges.includes(edgeId)) {
+                // 라인과 폴리곤이 겹치는지 확인
+                if (turf.booleanIntersects(feat, floodPoly)) {
+                    blockedEdges.push(edgeId);
+                    newlyBlocked = true;
+                }
+            }
+        });
+
+        if (newlyBlocked) {
+            // 경로 재탐색 및 UI 갱신
+            document.getElementById('system-status-box').classList.add('danger');
+            document.getElementById('route-state').innerText = 'RE-ROUTING...';
+            document.getElementById('route-state').classList.add('danger');
+            
+            updateRoute();
+            
+            // 시각적 경고 효과를 위해 잠시 뒤 원래 테마로 복구
+            setTimeout(() => {
+                document.getElementById('system-status-box').classList.remove('danger');
+                document.getElementById('route-state').innerText = 'SAFE';
+                document.getElementById('route-state').classList.remove('danger');
+            }, 800);
+        }
+
+        animationId = requestAnimationFrame(animateFlood);
+    }
+
+    // 버튼 이벤트 리스너
+    document.getElementById('btn-start').addEventListener('click', () => {
+        if (isSimulating) return;
+        isSimulating = true;
+        document.getElementById('btn-start').disabled = true;
+        document.getElementById('btn-reset').disabled = false;
+        animateFlood();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        isSimulating = false;
+        if (animationId) cancelAnimationFrame(animationId);
+        
+        floodRadius = 0;
+        blockedEdges = [];
+        
+        map.getSource('flood-zone').setData({ type: 'FeatureCollection', features: [] });
+        updateRoute();
+        
+        document.getElementById('btn-start').disabled = false;
+        document.getElementById('btn-start').innerText = "🌊 해일 시뮬레이션 시작";
+        document.getElementById('btn-reset').disabled = true;
+    });
+
+</script>
+</body>
+</html>

@@ -9,7 +9,7 @@
     <!-- Cesium CDN -->
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.116/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.116/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/index-mciJ4E3u.js"></script>
+  <script type="module" crossorigin src="./assets/index-Bvi8fMP-.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-JZTSDVVb.css">
 </head>
 <body>
@@ -73,8 +73,10 @@
         </div>
 
         <div class="tabs">
+            <button class="tab-btn" id="tab-d">Hurricane History</button>
             <button class="tab-btn active" id="tab-b">Sea Level Rise</button>
             <button class="tab-btn" id="tab-a">NbS Flood Reduction</button>
+            <button class="tab-btn" id="tab-c">Storm Surge</button>
         </div>
 
         <div id="content-b" class="tab-content active">
@@ -121,6 +123,70 @@
                 </div>
                 
                 <button id="play-sim-btn" class="glass-btn primary-btn" style="margin-top: 8px;">Play Simulation</button>
+            </div>
+        </div>
+
+        <div id="content-c" class="tab-content">
+            <div class="control-group scenario-c">
+                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start;">
+                    <p style="margin: 0; font-size: 12px; color:#94a3b8; line-height: 1.4;">GPU CA Storm Surge<br>Simulation</p>
+                    <button id="cam-c-btn" class="icon-btn">🎥 View</button>
+                </div>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div class="select-wrapper" style="flex: 1; margin: 0;">
+                        <select id="surge-height-select" style="padding: 4px 8px; font-size: 12px;">
+                            <option value="1.5">Cat 1 (1.5m)</option>
+                            <option value="2.4">Cat 3 (2.4m)</option>
+                            <option value="4.6" selected>Cat 5 (4.6m)</option>
+                        </select>
+                    </div>
+                    <div class="select-wrapper" style="flex: 1; margin: 0;">
+                        <select id="surge-speed-select" style="padding: 4px 8px; font-size: 12px;">
+                            <option value="4">1.0x Speed</option>
+                            <option value="6" selected>1.5x Speed</option>
+                            <option value="8">2.0x Speed</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="prep-surge-btn" class="glass-btn" style="margin-bottom: 8px;">Prepare Terrain</button>
+                <div style="display: flex; gap: 8px;">
+                    <button id="play-surge-btn" class="glass-btn primary-btn" style="flex: 1;" disabled>Play</button>
+                    <button id="stop-surge-btn" class="glass-btn" style="flex: 1; background: rgba(239,68,68,0.2);" disabled>Stop</button>
+                </div>
+                <p id="surge-status-display" style="margin-top: 12px; font-size: 11px; color: #94a3b8; line-height: 1.4;">Status: Ready</p>
+                <button id="export-surge-btn" class="dl-btn" style="display: none; margin-top: 8px;">⬇️ Export Inundation (GeoJSON)</button>
+            </div>
+        </div>
+
+        <div id="content-d" class="tab-content">
+            <div class="control-group scenario-d">
+                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start;">
+                    <p style="margin: 0; font-size: 12px; color:#94a3b8; line-height: 1.4;">Historical Hurricane<br>Tracking</p>
+                    <button id="cam-d-btn" class="icon-btn">🎥 View</button>
+                </div>
+                
+                <div class="toggle-container" style="margin-bottom: 8px;">
+                    <span class="toggle-label">Dorian (2019) Path</span>
+                    <label class="switch">
+                        <input type="checkbox" id="dorian-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-container">
+                    <span class="toggle-label">Major Hurricanes</span>
+                    <label class="switch">
+                        <input type="checkbox" id="major-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                
+                <div style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+                    <h3 style="margin-top:0; margin-bottom: 12px; color: #10b981;">Advanced AI Showcases</h3>
+                    <a href="showcase_geoai.html" class="glass-btn" style="display:block; text-align:center; text-decoration:none; margin-bottom: 8px; padding:8px; border:1px solid rgba(255,255,255,0.2); border-radius:6px; color:white;">🤖 GeoAI Dynamic Routing</a>
+                    <a href="showcase_dmrv.html" class="glass-btn" style="display:block; text-align:center; text-decoration:none; margin-bottom: 8px; padding:8px; border:1px solid rgba(255,255,255,0.2); border-radius:6px; color:white;">🌲 dMRV Carbon Dashboard</a>
+                    <a href="showcase_bim.html" class="glass-btn" style="display:block; text-align:center; text-decoration:none; padding:8px; border:1px solid rgba(255,255,255,0.2); border-radius:6px; color:white;">🏢 BIM Evacuation Simulation</a>
+                </div>
             </div>
         </div>
     </div>
