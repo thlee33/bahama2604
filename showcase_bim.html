@@ -68,11 +68,11 @@
     </style>
 </head>
 <body>
+<a href="index.html" style="position: fixed; top: 20px; right: 20px; z-index: 9999; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); padding: 12px 20px; border-radius: 8px; color: #f8fafc; font-weight: 600; text-decoration: none; font-size: 14px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); transition: all 0.2s;">⬅️ Back to Main Dashboard</a>
 
 <div id="cesiumContainer"></div>
 
 <div class="glass-panel">
-    <a href="index.html" class="btn" style="text-decoration:none; text-align:center; display:block; margin-bottom:16px; background:#475569;">⬅️ Back to Main Dashboard</a>
     <h1>GIS-BIM Integration</h1>
     <p class="subtitle">실외 도로망에서 건축물 실내 계단까지 이어지는 끊김 없는(Seamless) 대피 라우팅 시뮬레이션</p>
     
@@ -92,6 +92,9 @@
 </div>
 
 <script>
+    // 0. Cesium Ion 토큰 세팅
+    Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIzYTM3ODhlNC1jOWUxLTRhOTYtYTgwZC1iMDA3OGJiMTQwZDciLCJpZCI6MTI5NDU5LCJpYXQiOjE2ODIwNTc4NjN9.GC-W9QfAFa9rXMh2Ow2rSC5UvLcwtS_qjWJ1v454z1A";
+
     // 1. Cesium Viewer 초기화
     const viewer = new Cesium.Viewer('cesiumContainer', {
         terrainProvider: undefined, // 평탄한 지형 사용
